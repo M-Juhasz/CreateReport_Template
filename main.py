@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 df = pd.read_excel("testdata.xlsx")
 
@@ -68,3 +70,21 @@ print(dfnewbool)
 print(pd.isna(dfnewbool))
 
 print(dfnewbool.dropna())
+
+
+print("------------------plotting----------------")
+plt.close("all")
+ts = pd.Series(np.random.randn(1000), index=pd.date_range("1/1/2000", periods=1000))
+print(ts)
+print(ts.cumsum())
+
+ts = ts.cumsum()
+
+# ----------------------print html table------------------------
+print(dfnewbool.to_html())
+with open("test.html", "w") as file_out:
+    print(dfnewbool.to_html(), file=file_out)
+
+# -----------------------print plot----------------------------
+fig = ts.plot().get_figure()
+fig.savefig('test.png')
