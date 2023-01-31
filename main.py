@@ -29,11 +29,42 @@ print(df_sheet_multi[0])
 print(df_sheet_multi[1])
 
 # ---------print to csv-----------
-# df.to_csv('final_output.csv')
+# df.to_csv('out.csv')
 
 # -------------------------add data frames, change types---------------------
-dfnew = df_sheet_multi[0].add(df_sheet_multi[1], fill_value=int(0)).astype(int)
-print("--------------add 2 data frames------------------")
+dfnew = df_sheet_multi[0].add(df_sheet_multi[1], fill_value=0)
+
+print("--------------add column, add 2 data frames------------------")
 dfnew["E"] = (3, 2, 1)
+dfnew = dfnew.astype(int)
 print(dfnew)
 print(dfnew.dtypes)
+
+print("-------------------mean function on whole df----------------")
+print(dfnew.mean())
+
+print("-------------------manual mean column A----------------")
+meanA = (dfnew.iat[0,0] + dfnew.iat[1,0] + dfnew.iat[2,0]) / 3
+print(meanA)
+
+print("----------dataframe.info()------------------")
+print(dfnew.info())
+
+print("----------Number of rows, columns------------------")
+print(str(len(dfnew)) + ", " + str(len(dfnew.columns)))
+
+print("----------shape and size------------------")
+print("df.shape: " + str(dfnew.shape))
+print("df.size: " + str(dfnew.size))
+
+print("-------------------some manipulations-----------------------")
+dfnewbool = dfnew[dfnew > 70]
+
+dfnewbool.iat[1,4] = 76
+dfnewbool.iat[2,4] = 77
+dfnewbool.iat[1,3] = 66
+dfnewbool.iat[2,3] = 67
+print(dfnewbool)
+print(pd.isna(dfnewbool))
+
+print(dfnewbool.dropna())
