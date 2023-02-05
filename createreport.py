@@ -1,8 +1,8 @@
 from email.mime.multipart import MIMEMultipart
 
-import pandas as pd
-
-import config
+import pandas
+# MIMEMultipart and pandas are imported on module level only for type hinting. TODO: Find better solution.
+# Required import statements are given for each function seperately.
 
 
 def create_timestamps() -> dict:
@@ -14,7 +14,8 @@ def create_timestamps() -> dict:
     }
 
 
-def load_from_excel(filename: str) -> pd.DataFrame:
+def load_from_excel(filename: str) -> pandas.DataFrame:
+    import pandas as pd
 
     try:
         data = pd.read_excel(filename)
@@ -25,7 +26,7 @@ def load_from_excel(filename: str) -> pd.DataFrame:
     return data
 
 
-def create_plot_image(data: pd.DataFrame) -> str:
+def create_plot_image(data: pandas.DataFrame) -> str:
     import io
     import base64
 
@@ -42,7 +43,7 @@ def create_plot_image(data: pd.DataFrame) -> str:
     fig.savefig(string_bytes, format='png')
     string_bytes.seek(0)
     base64_png_data = base64.b64encode(string_bytes.read()).decode("utf-8")
-    return "data:;base64,{}".format(base64_png_data)
+    return f"data:;base64,{base64_png_data}"
 
 
 def html_report(context: dict) -> str:
@@ -84,6 +85,7 @@ def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
 
 
 def mail_create_msg(to: list, cc: list, body_plain: str, body_html: str = "") -> MIMEMultipart:
+    from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
 
     message = MIMEMultipart('alternative')
@@ -146,6 +148,7 @@ def mail_send(smtp_server: str, port: int, sender: str, password: str, receiver:
 
 if __name__ == "__main__":
     import sys
+    import config
 
     print("main:")
 
