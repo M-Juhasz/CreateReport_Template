@@ -146,7 +146,7 @@ def mail_send(smtp_server: str, port: int, sender: str, password: str, receiver:
         Could not connect to smtp server. Please check your smtp connection details in config.py.""")
 
 
-if __name__ == "__main__":
+def main():
     import sys
     import config
 
@@ -211,3 +211,7 @@ if __name__ == "__main__":
         sys.exit(str(error))
 
     print("Mail sent to: " + str(receiver_list))
+
+
+if __name__ == "__main__":
+    main()
