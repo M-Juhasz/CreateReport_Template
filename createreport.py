@@ -1,5 +1,7 @@
-import pandas as pd
 from email.mime.multipart import MIMEMultipart
+
+import pandas as pd
+
 import config
 
 
@@ -13,14 +15,11 @@ def create_timestamps():
 
 
 def load_from_excel(filename: str) -> pd.DataFrame:
-    while True:
-        try:
-            data = pd.read_excel(filename)
-            break
-        except IOError as err:
-            usr_in = input("Could not open file! Please close Excel. Type A to abort or press Enter to retry: ")
-            if usr_in.upper() == "A":
-                raise IOError(str(err) + " - user abort")
+
+    try:
+        data = pd.read_excel(filename)
+    except IOError as err:
+        raise IOError(str(err) + " - Please close Excel.")
 
     data = data.drop("Unnamed: 0", axis=1)
     return data
@@ -138,6 +137,7 @@ def mail_send(smtp_server: str, port: int, sender: str, password: str, receiver:
 
 if __name__ == "__main__":
     import sys
+
     print("main:")
 
     # Get time strings for report and filename
@@ -194,4 +194,3 @@ if __name__ == "__main__":
     # create list of receivers and send
     receiver_list = config.cc.split(",") + config.bcc.split(",") + config.to.split(",")
     mail_send(config.smtp_server, config.port, config.sender_email, config.password, receiver_list, msg)
-
