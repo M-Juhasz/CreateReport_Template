@@ -7,10 +7,11 @@ import pandas
 
 def create_timestamps() -> dict:
     from datetime import datetime
+    dtnow = datetime.now()
     return {
-        "today_date": datetime.today().strftime("%d %b, %Y"),
-        "today_time": datetime.now().strftime("%H:%M:%S " + datetime.now().astimezone().tzname()),
-        "timestamp": datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
+        "today_date": dtnow.strftime("%d %b, %Y"),
+        "today_time": dtnow.strftime("%H:%M:%S " + dtnow.astimezone().tzname()),
+        "timestamp": dtnow.strftime("%m-%d-%Y_%H-%M-%S")
     }
 
 
@@ -26,11 +27,14 @@ def load_from_excel(filename: str) -> pandas.DataFrame:
     return data
 
 
+# TODO: actually DO stuff with the data - this would be the place
+
+
 def create_plot_image(data: pandas.DataFrame) -> str:
     import io
     import base64
 
-    # create plot
+    # create plot TODO: make more dynamic - loop through column, try grouping to subplots, experiment with plot format
     ax = data["A"].plot()
     data["B"].plot(ax=ax)
     data["C"].plot(ax=ax)
@@ -46,7 +50,7 @@ def create_plot_image(data: pandas.DataFrame) -> str:
     return f"data:;base64,{base64_png_data}"
 
 
-def html_report(context: dict) -> str:
+def html_report(context: dict, template: str) -> str:
     import jinja2
 
     # jinja stuff
@@ -55,7 +59,7 @@ def html_report(context: dict) -> str:
     template_env = jinja2.Environment(loader=template_loader)
 
     # create html string from template - placeholders are replaced with the items in the dict context
-    template = template_env.get_template('report.html')
+    template = template_env.get_template(template)
     return template.render(context)
 
 
@@ -179,7 +183,7 @@ def main():
                     'stats': df.describe().to_html()}
 
     # Jinja2 - generate html from template and context dicttionary
-    html_string = html_report(context_dict)
+    html_string = html_report(context_dict, config.html_template)
     print(f"""html string prepared:
         {html_string}
     """)

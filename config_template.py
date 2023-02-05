@@ -3,6 +3,9 @@
 # pdfkit needs the location of wkhtmltopdf
 wkhtmltopdf_path = "C://your//path//to//wkhtmltopdf(.exe)"
 
+# html template
+html_template = "report.html"
+
 # connection and login data for smtplib
 port = 465  # SSL!
 smtp_server = "your.smtp.server"
