@@ -14,6 +14,6 @@ Instructions:
 
 ## No License
 Just playing around, use what you like.
-I'm not responsible for any negative results of effects.
+I'm not responsible for any negative results or effects.
 I am, however, responsible if this generates money. 
 I'm sure that's how this works :)
