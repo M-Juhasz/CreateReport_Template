@@ -1,16 +1,15 @@
-# PandasTraining
-Testing the Pandas Package with xlrd
+# Example / Teamplate for a "Report Generator":
 
-# Example "report generator":
-
-* reads first sheet of testdata file, currently includes (and possibly expects) 3 columns in plot
+* reads first sheet of testdata file as pandas dataframe, currently includes (and possibly expects) 3 columns in plot
 * uses report.html as template for pdf
 * outputs z_test_report_[timestamp].pdf
 * sends mail with attachment (mail details in config.py!)
 
 Instructions:
-* Install dependencies (e.g. pip install -r requirements.txt)
-* create config.py from config_template.py!
+* Install dependencies: 
+	* python packages - see requirements.txt (or use pip install -r requirements.txt) 
+	* download wkhtmltopdf
+* create config.py from config_template.py
 * run createreport.py
 
 ## No License

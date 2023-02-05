@@ -5,7 +5,7 @@ import pandas as pd
 import config
 
 
-def create_timestamps():
+def create_timestamps() -> dict:
     from datetime import datetime
     return {
         "today_date": datetime.today().strftime("%d %b, %Y"),
