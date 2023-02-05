@@ -128,11 +128,20 @@ def mail_attach_file(message: MIMEMultipart, file: str):
 def mail_send(smtp_server: str, port: int, sender: str, password: str, receiver: list, message: MIMEMultipart):
     import smtplib
     import ssl
+    import socket
 
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender, password)
-        server.sendmail(sender, receiver, message.as_string())
+    try:
+        with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+            server.login(sender, password)
+            server.sendmail(sender, receiver, message.as_string())
+    except smtplib.SMTPAuthenticationError as err:
+        raise ValueError(str(err) + """
+        Could not log in to smtp server. Please check your credentials in config.py. 
+        Note that some mail providers require you to set up an application password!""")
+    except socket.gaierror as err:
+        raise ValueError(str(err) + """
+        Could not connect to smtp server. Please check your smtp connection details in config.py.""")
 
 
 if __name__ == "__main__":
@@ -193,4 +202,9 @@ if __name__ == "__main__":
 
     # create list of receivers and send
     receiver_list = config.cc.split(",") + config.bcc.split(",") + config.to.split(",")
-    mail_send(config.smtp_server, config.port, config.sender_email, config.password, receiver_list, msg)
+    try:
+        mail_send(config.smtp_server, config.port, config.sender_email, config.password, receiver_list, msg)
+    except ValueError as error:
+        sys.exit(str(error))
+
+    print("Mail sent to: " + str(receiver_list))
