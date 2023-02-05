@@ -1,32 +1,26 @@
 import pandas as pd
-from typing import Optional
-
+from email.mime.multipart import MIMEMultipart
 import config
-# import smtplib
-# import ssl
 
 
 def create_timestamps():
     from datetime import datetime
-
-    today_date = datetime.today().strftime("%d %b, %Y")
-    timestamp = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
-
     return {
-        "today_date": today_date,
-        "timestamp": timestamp
+        "today_date": datetime.today().strftime("%d %b, %Y"),
+        "today_time": datetime.now().strftime("%H:%M:%S " + datetime.now().astimezone().tzname()),
+        "timestamp": datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
     }
 
 
-def load_from_excel(filename: str) -> Optional[pd.DataFrame]:
+def load_from_excel(filename: str) -> pd.DataFrame:
     while True:
         try:
             data = pd.read_excel(filename)
             break
-        except IOError:
+        except IOError as err:
             usr_in = input("Could not open file! Please close Excel. Type A to abort or press Enter to retry: ")
             if usr_in.upper() == "A":
-                return
+                raise IOError(str(err) + " - user abort")
 
     data = data.drop("Unnamed: 0", axis=1)
     return data
@@ -46,7 +40,7 @@ def create_plot_image(data: pd.DataFrame) -> str:
 
     # create string containing bit representation of the image file
     string_bytes = io.BytesIO()
-    fig.savefig(string_bytes, format='png')  # instead of fig.savefig(imagefile)
+    fig.savefig(string_bytes, format='png')
     string_bytes.seek(0)
     base64_png_data = base64.b64encode(string_bytes.read()).decode("utf-8")
     return "data:;base64,{}".format(base64_png_data)
@@ -69,7 +63,6 @@ def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
     import pdfkit
     # set up pdfkit to use wkhtmltopdf.exe
 
-
     options = {
         'page-size': 'A4',
         'margin-top': '0.50in',
@@ -81,52 +74,124 @@ def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
         # "enable-local-file-access": ""
     }
 
-    pdf_config = pdfkit.configuration(
-        wkhtmltopdf=wkhtmltopdf_path)
-    pdfkit.from_string(html_out, filename, options=options, configuration=pdf_config,
-                       css='style.css')
+    try:
+        pdf_config = pdfkit.configuration(
+            wkhtmltopdf=wkhtmltopdf_path)
+        pdfkit.from_string(html_out, filename, options=options, configuration=pdf_config,
+                           css='style.css')
+        return filename
+    except OSError as err:
+        raise OSError(str(err))
 
-    return filename
+
+def mail_create_msg(to: list, cc: list, body_plain: str, body_html: str = "") -> MIMEMultipart:
+    from email.mime.text import MIMEText
+
+    message = MIMEMultipart('alternative')
+    message['Subject'] = "createreport.py testmail"
+    message['To'] = to
+    message['Cc'] = cc
+
+    # Email clients try to render last part first - that should be html
+    part1 = MIMEText(body_plain, "plain")
+    message.attach(part1)
+
+    if body_html != "":
+        part2 = MIMEText(body_html, "html")
+        message.attach(part2)
+
+    return message
+
+
+def mail_attach_file(message: MIMEMultipart, file: str):
+    from email import encoders
+    from email.mime.base import MIMEBase
+
+    # Open file in binary mode
+    with open(file, "rb") as attachment:
+        # Read file and set as application/octet-stream. Email clients should recognize this as attachment
+        att_part = MIMEBase("application", "octet-stream")
+        att_part.set_payload(attachment.read())
+
+    # Encode binary to ASCII
+    encoders.encode_base64(att_part)
+
+    # Add header
+    att_part.add_header(
+        "Content-Disposition",
+        f"attachment; filename= {file}",
+    )
+
+    # add attachment to message
+    message.attach(att_part)
+
+
+def mail_send(smtp_server: str, port: int, sender: str, password: str, receiver: list, message: MIMEMultipart):
+    import smtplib
+    import ssl
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+        server.login(sender, password)
+        server.sendmail(sender, receiver, message.as_string())
 
 
 if __name__ == "__main__":
+    import sys
     print("main:")
 
-    # get time strings for report and filename
+    # Get time strings for report and filename
     time = create_timestamps()
     print(f"Got new timestamp: {time['timestamp']}")
 
-    # load dataframe from excel (first sheet)
-    df = load_from_excel("testdata.xlsx")
-    if df is None:
-        print("Could not open source file. Aborted by user.")
-    else:
-        print(f"""DataFrame loaded:
-        {df}
-        """)
+    # Load dataframe from excel (first sheet)
+    try:
+        df = load_from_excel("testdata.xlsx")
+    except IOError as error:
+        sys.exit(str(error))
 
-        # TODO: stuff with DataFrame comes here
+    print(f"""DataFrame loaded:
+    {df}
+    """)
 
-        # create plot image as string
-        img = create_plot_image(df)
-        print(f"""Plot image created: 
-            {img}
-        """)
+    # TODO: stuff with DataFrame comes here
 
-        # prepare context dict - needs placeholders for html template as keys, replacement strings as values
-        context_dict = {'table': df.to_html(), 'img': img, 'date': time["today_date"]}
+    # Create plot image as string
+    img = create_plot_image(df)
+    print(f"""Plot image created: 
+        {img}
+    """)
 
-        # Jinja2 - generate html from template and context dicttionary
-        html_string = html_report(context_dict)
-        print(f"""html string prepared:
-            {html_string}
-        """)
+    # Prepare context dict - needs placeholders for html template as keys, replacement strings as values
+    context_dict = {'table': df.to_html(), 'img': img, 'date': time["today_date"], 'time': time["today_time"],
+                    'stats': df.describe().to_html()}
 
-        # set output pdf file name (and path if required)
-        pdf_file = f"z_test_report_{time['timestamp']}.pdf"
+    # Jinja2 - generate html from template and context dicttionary
+    html_string = html_report(context_dict)
+    print(f"""html string prepared:
+        {html_string}
+    """)
 
-        # pdfkit - convert html to pdf
-        file = html_to_pdf(html_string, pdf_file, config.wkhtmltopdf_path)
-        print(f"""pdf created:
-            {file}
-        """)
+    # Set output pdf file name (and path if required)
+    pdf_file = f"z_test_report_{time['timestamp']}.pdf"
+
+    # Pdfkit - convert html to pdf
+    try:
+        file_ret = html_to_pdf(html_string, pdf_file, config.wkhtmltopdf_path)
+    except OSError as error:
+        sys.exit(str(error))
+
+    print(f"""pdf created:
+        {file_ret}
+    """)
+
+    # Create MIMEMultipart message - bcc not included
+    msg = mail_create_msg(config.to, config.cc, config.body_plain, config.body_html)
+
+    # add file attachement to message
+    mail_attach_file(msg, file_ret)
+
+    # create list of receivers and send
+    receiver_list = config.cc.split(",") + config.bcc.split(",") + config.to.split(",")
+    mail_send(config.smtp_server, config.port, config.sender_email, config.password, receiver_list, msg)
+
