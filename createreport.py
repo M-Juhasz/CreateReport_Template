@@ -30,7 +30,7 @@ def load_from_excel(filename: str) -> pandas.DataFrame:
 # TODO: actually DO stuff with the data - this would be the place
 
 
-def create_plot_image(data: pandas.DataFrame) -> str:
+def create_plot_image(data: pandas.DataFrame, store_path: str = "") -> str:
     import io
     import base64
 
@@ -47,6 +47,12 @@ def create_plot_image(data: pandas.DataFrame) -> str:
     fig.savefig(string_bytes, format='png')
     string_bytes.seek(0)
     base64_png_data = base64.b64encode(string_bytes.read()).decode("utf-8")
+
+    # save file to HD if needed
+    if store_path != "":
+        fig.savefig(store_path)
+
+    # return encoded file sting for HTML source attribute
     return f"data:;base64,{base64_png_data}"
 
 
@@ -65,7 +71,6 @@ def html_report(context: dict, template: str) -> str:
 
 def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
     import pdfkit
-    # set up pdfkit to use wkhtmltopdf.exe
 
     options = {
         'page-size': 'A4',
@@ -79,10 +84,12 @@ def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
     }
 
     try:
+        # set up pdfkit to use wkhtmltopdf.exe
         pdf_config = pdfkit.configuration(
             wkhtmltopdf=wkhtmltopdf_path)
         pdfkit.from_string(html_out, filename, options=options, configuration=pdf_config,
                            css='style.css')
+
         return filename
     except OSError as err:
         raise OSError(str(err))
@@ -173,7 +180,7 @@ def main():
     # TODO: stuff with DataFrame comes here
 
     # Create plot image as string
-    img = create_plot_image(df)
+    img = create_plot_image(df)  # pass string (e.g. "img_" + time["timestamp"]) as second parameter to store file
     print(f"""Plot image created: 
         {img}
     """)
