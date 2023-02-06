@@ -1,7 +1,10 @@
 from email.mime.multipart import MIMEMultipart
+from io import BytesIO
 
 import pandas
-# MIMEMultipart and pandas are imported on module level only for type hinting. TODO: Find better solution.
+
+
+# MIMEMultipart, BytesIO and pandas are imported on module level only for type hinting. TODO: Find better solution.
 # Required import statements are given for each function seperately.
 
 
@@ -48,7 +51,7 @@ def create_plot_image(data: pandas.DataFrame, store_path: str = "") -> str:
     string_bytes.seek(0)
     base64_png_data = base64.b64encode(string_bytes.read()).decode("utf-8")
 
-    # save file to HD if needed
+    # save file to HDD if needed
     if store_path != "":
         fig.savefig(store_path)
 
@@ -95,6 +98,34 @@ def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
         raise OSError(str(err))
 
 
+# html_to_pdf_mem does the same as html_to_pdf but does not save file to HDD.
+# Instead, it returns the BytesIO object holding the generated pdf file's binary data. Use with mail_attach_file_mem
+def html_to_pdf_mem(html_out: str, wkhtmltopdf_path: str) -> BytesIO:
+    import pdfkit
+    import io
+
+    options = {
+        'page-size': 'A4',
+        'margin-top': '0.50in',
+        'margin-right': '0.50in',
+        'margin-bottom': '0.50in',
+        'margin-left': '0.50in',
+        'encoding': "UTF-8",
+        'no-outline': None,
+        # "enable-local-file-access": ""
+    }
+
+    try:
+        # set up pdfkit to use wkhtmltopdf.exe
+        pdf_config = pdfkit.configuration(
+            wkhtmltopdf=wkhtmltopdf_path)
+        pdf_file = io.BytesIO(pdfkit.from_string(html_out, options=options, configuration=pdf_config, css='style.css'))
+        print(pdf_file)
+        return pdf_file
+    except OSError as err:
+        raise OSError(str(err))
+
+
 def mail_create_msg(to: list, cc: list, body_plain: str, body_html: str = "") -> MIMEMultipart:
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
@@ -132,6 +163,29 @@ def mail_attach_file(message: MIMEMultipart, file: str):
     att_part.add_header(
         "Content-Disposition",
         f"attachment; filename= {file}",
+    )
+
+    # add attachment to message
+    message.attach(att_part)
+
+
+# mail_attach_file_mem does the same as mail_attach_file,
+# only reads file from BytesIO object instead of HDD (e.g. coming from html_to_pdf_mem).
+def mail_attach_file_mem(message: MIMEMultipart, file: BytesIO, filename: str):
+    from email import encoders
+    from email.mime.base import MIMEBase
+
+    # Read BytesIO and set as application/octet-stream. Email clients should recognize this as attachment
+    att_part = MIMEBase("application", "octet-stream")
+    att_part.set_payload(file.read())
+
+    # Encode binary to ASCII
+    encoders.encode_base64(att_part)
+
+    # Add header
+    att_part.add_header(
+        "Content-Disposition",
+        f"attachment; filename= {filename}",
     )
 
     # add attachment to message
@@ -198,9 +252,9 @@ def main():
     # Set output pdf file name (and path if required)
     pdf_file = f"z_test_report_{time['timestamp']}.pdf"
 
-    # Pdfkit - convert html to pdf
+    # Pdfkit - convert html to pdf (using the *_mem functions - pdf file is not written to HDD).
     try:
-        file_ret = html_to_pdf(html_string, pdf_file, config.wkhtmltopdf_path)
+        file_ret = html_to_pdf_mem(html_string, config.wkhtmltopdf_path)
     except OSError as error:
         sys.exit(str(error))
 
@@ -212,7 +266,7 @@ def main():
     msg = mail_create_msg(config.to, config.cc, config.body_plain, config.body_html)
 
     # add file attachement to message
-    mail_attach_file(msg, file_ret)
+    mail_attach_file_mem(msg, file_ret, pdf_file)
 
     # create list of receivers and send
     receiver_list = config.cc.split(",") + config.bcc.split(",") + config.to.split(",")
