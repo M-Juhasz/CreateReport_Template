@@ -1,15 +1,25 @@
+import base64
+import io
+import smtplib
+import socket
+import ssl
+from datetime import datetime
+from email import encoders
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
-from io import BytesIO
+from email.mime.text import MIMEText
 
-import pandas
+import jinja2
+import pandas as pd
+import pdfkit
 
 
-# MIMEMultipart, BytesIO and pandas are imported on module level only for type hinting. TODO: Find better solution.
+# All imports on module level, functions should show needed imports in comments.
 # Required import statements are given for each function seperately.
 
 
 def create_timestamps() -> dict:
-    from datetime import datetime
+    # from datetime import datetime
     dtnow = datetime.now()
     return {
         "today_date": dtnow.strftime("%d %b, %Y"),
@@ -18,8 +28,8 @@ def create_timestamps() -> dict:
     }
 
 
-def load_from_excel(filename: str) -> pandas.DataFrame:
-    import pandas as pd
+def load_from_excel(filename: str) -> pd.DataFrame:
+    # import pandas as pd
 
     try:
         data = pd.read_excel(filename)
@@ -33,9 +43,9 @@ def load_from_excel(filename: str) -> pandas.DataFrame:
 # TODO: actually DO stuff with the data - this would be the place
 
 
-def create_plot_image(data: pandas.DataFrame, store_path: str = "") -> str:
-    import io
-    import base64
+def create_plot_image(data: pd.DataFrame, store_path: str = "") -> str:
+    # import io
+    # import base64
 
     # create plot TODO: make more dynamic - loop through column, try grouping to subplots, experiment with plot format
     ax = data["A"].plot()
@@ -60,7 +70,7 @@ def create_plot_image(data: pandas.DataFrame, store_path: str = "") -> str:
 
 
 def html_report(context: dict, template: str) -> str:
-    import jinja2
+    # import jinja2
 
     # jinja stuff
     # create environment and loader
@@ -73,7 +83,7 @@ def html_report(context: dict, template: str) -> str:
 
 
 def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
-    import pdfkit
+    # import pdfkit
 
     options = {
         'page-size': 'A4',
@@ -100,9 +110,9 @@ def html_to_pdf(html_out: str, filename: str, wkhtmltopdf_path: str) -> str:
 
 # html_to_pdf_mem does the same as html_to_pdf but does not save file to HDD.
 # Instead, it returns the BytesIO object holding the generated pdf file's binary data. Use with mail_attach_file_mem
-def html_to_pdf_mem(html_out: str, wkhtmltopdf_path: str) -> BytesIO:
-    import pdfkit
-    import io
+def html_to_pdf_mem(html_out: str, wkhtmltopdf_path: str) -> io.BytesIO:
+    # import pdfkit
+    # import io
 
     options = {
         'page-size': 'A4',
@@ -127,8 +137,8 @@ def html_to_pdf_mem(html_out: str, wkhtmltopdf_path: str) -> BytesIO:
 
 
 def mail_create_msg(to: list, cc: list, body_plain: str, body_html: str = "") -> MIMEMultipart:
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
+    # from email.mime.multipart import MIMEMultipart
+    # from email.mime.text import MIMEText
 
     message = MIMEMultipart('alternative')
     message['Subject'] = "createreport.py testmail"
@@ -146,9 +156,11 @@ def mail_create_msg(to: list, cc: list, body_plain: str, body_html: str = "") ->
     return message
 
 
+# mail_attach_file returns nothing - it is handed a reference to the MIMEMultipart object (mutable) and modifies the
+# referenced object
 def mail_attach_file(message: MIMEMultipart, file: str):
-    from email import encoders
-    from email.mime.base import MIMEBase
+    # from email import encoders
+    # from email.mime.base import MIMEBase
 
     # Open file in binary mode
     with open(file, "rb") as attachment:
@@ -171,9 +183,9 @@ def mail_attach_file(message: MIMEMultipart, file: str):
 
 # mail_attach_file_mem does the same as mail_attach_file,
 # only reads file from BytesIO object instead of HDD (e.g. coming from html_to_pdf_mem).
-def mail_attach_file_mem(message: MIMEMultipart, file: BytesIO, filename: str):
-    from email import encoders
-    from email.mime.base import MIMEBase
+def mail_attach_file_mem(message: MIMEMultipart, file: io.BytesIO, filename: str):
+    # from email import encoders
+    # from email.mime.base import MIMEBase
 
     # Read BytesIO and set as application/octet-stream. Email clients should recognize this as attachment
     att_part = MIMEBase("application", "octet-stream")
@@ -193,9 +205,9 @@ def mail_attach_file_mem(message: MIMEMultipart, file: BytesIO, filename: str):
 
 
 def mail_send(smtp_server: str, port: int, sender: str, password: str, receiver: list, message: MIMEMultipart):
-    import smtplib
-    import ssl
-    import socket
+    # import smtplib
+    # import ssl
+    # import socket
 
     context = ssl.create_default_context()
     try:

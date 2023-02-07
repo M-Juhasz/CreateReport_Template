@@ -1,5 +1,5 @@
 # Example / Teamplate for a "Report Generator":
-Tried to seperate code into functions as I thought it made sense. Imports on function level for easy reuseability.
+Tried to seperate code into functions as I thought it made sense. Imports on function level shown in comments for easy reuseability.
 
 Example script demoing useage of the functions can be found in main function. Test by executing createreport.py.
 
