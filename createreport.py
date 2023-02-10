@@ -19,7 +19,8 @@ import pdfkit
 
 
 def create_timestamps() -> dict:
-    # from datetime import datetime
+    # from datetime import datetime TODO: input of format string would make more sense...
+    # Then again this whole function makes little sense...
     dtnow = datetime.now()
     return {
         "today_date": dtnow.strftime("%d %b, %Y"),
